@@ -1,9 +1,10 @@
 var keys = require('./keys');
 var Twitter = require('twitter');
 var spotify = require('spotify');
+var request = require('request');
+var fs = require('fs');
 var input = process.argv[2];
 var searchTerm = process.argv[3];
-
 
 function myTweets(){
 	var client = new Twitter(keys.twitterKeys);
@@ -19,6 +20,9 @@ function myTweets(){
 }
 
 function spotifyThisSong(){
+	if (typeof searchTerm === 'undefined'){
+		searchTerm = "What's My Age Again";
+	}
 	spotify.search({type: 'track', query: searchTerm}, function(err, data){
 		if (err){
 			console.log("Hit an error. Try again: " + err);
@@ -27,7 +31,6 @@ function spotifyThisSong(){
 			var counter = 1;
 			var tracks = data.tracks.items;
 
-			//console.log(tracks)
 			for (prop in tracks){
 				var allArtists = tracks[prop].artists[0].name;
 					for (i = 1; i < tracks[prop].artists.length; i++){
@@ -45,19 +48,53 @@ function spotifyThisSong(){
 	});
 }
 
-switch (input){
-	case 'my-tweets':
-		myTweets();
-		break;
-	case 'spotify-this-song':
-		spotifyThisSong();
-		break;
-	case 'movie-this':
-		movieThis();
-		break;
-	case 'do-what-it-says':
-		doWhatItSays();
-		break;
-	default:
-		console.log("Not a valid input, broh. Try again");
+function movieThis(){
+	if (typeof searchTerm === 'undefined'){
+		searchTerm = "Mr. Nobody";
+	}
+	request('http://omdbapi.com/?t=' + searchTerm + "&y=&plot=full&tomatoes=true&r=json", function(error, response, body){
+		if (!error && response.statusCode == 200){
+			body = JSON.parse(body);
+			console.log("Title: " + body.Title);
+			console.log("Year: " + body.Year);
+			console.log("Rated: " + body.Rated);
+			console.log("IMDb Rating: " + body.imdbRating);
+			console.log("Country: " + body.Country);
+			console.log("Language: " + body.Language);
+			console.log("Plot: " + body.Plot);
+			console.log("Actors: " + body.Actors);
+			console.log("Rotten Tomatoes Rating: " + body.tomatoRating);
+			console.log("Rotten Tomatoes URL: " + body.tomatoURL);
+		}
+	});
 }
+
+function doWhatItSays(){
+	fs.readFile('random.txt', 'utf8', function(err, data){
+		var inputArr = data.split(',');
+		input = inputArr[0];
+		searchTerm = inputArr[1];
+		run();
+	});
+}
+
+function run(){
+	switch (input){
+		case 'my-tweets':
+			myTweets();
+			break;
+		case 'spotify-this-song':
+			spotifyThisSong();
+			break;
+		case 'movie-this':
+			movieThis();
+			break;
+		case 'do-what-it-says':
+			doWhatItSays();
+			break;
+		default:
+			console.log("Not a valid input, broh. Try again");
+	}
+}
+
+run();
